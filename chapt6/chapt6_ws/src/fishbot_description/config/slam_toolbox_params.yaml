@@ -1,0 +1,40 @@
+slam_toolbox:
+  ros__parameters:
+    # ========== 基础配置（必选） ==========
+    use_sim_time: true
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_link
+    scan_topic: /scan
+
+    # ========== 核心：彻底切断里程计干扰 ==========
+    use_odometry: true                # 完全关闭里程计，纯激光SLAM（根治里程计漂移的关键）
+    odom_config: [ture, ture, false, false, false, ture]  # 双重保险，不信任任何里程计数据
+
+    # ========== 局部匹配：极致严格（减少局部误差） ==========
+    resolution: 0.05                   # 平衡精度与性能
+    max_laser_range: 6.0               # 进一步缩小激光范围，只保留有效、无噪点的激光数据
+    min_laser_range: 0.1
+    scan_matcher_params:
+      angular_resolution: 0.05         # 角度精度拉满（0.05°），局部匹配几乎无误差
+      max_correspondence_distance: 0.2 # 仅匹配0.2m内的激光点，彻底过滤误匹配
+      kernel_size: 5                   # 更大核尺寸，匹配更平滑
+      use_scan_matching: true          # 强制启用激光匹配
+      use_csm: true                    # 启用高精度激光匹配算法
+
+    # ========== 全局策略：激进闭环（修正累积误差） ==========
+    loop_detection: true               # 强制开闭环
+    loop_search_size: 100              # 最大范围搜索闭环（100帧），绕路必修正
+    loop_match_min_score: 0.9          # 极致严格的闭环匹配（仅信任90%以上的匹配）
+    loop_update_maps: true             # 闭环成功后立即更新地图，修正错位
+    reg_num_iterations: 200            # 配准迭代次数拉满，闭环修正更精准
+
+    # ========== 虚拟机性能适配（不卡顿） ==========
+    minimum_travel_distance: 0.3       # 减少地图更新频率，避免卡顿
+    minimum_travel_heading: 0.2
+    num_threads: 2                     # 虚拟机稳定线程数
+    max_cached_frames: 3000            # 足够缓存，不丢激光帧
+    debug_logging: false
+    enable_interactive_mode: true
+    core_plugin: slam_toolbox::ScanMatcherPlugin
+    solver_plugin: slam_toolbox::CeresSolver
